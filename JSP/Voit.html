@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Simulation</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(10, 40px); grid-gap: 2px; margin: 20px auto; width: 420px; }
+        .cell { width: 40px; height: 40px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; }
+        .car { background-color: red; color: white; font-weight: bold; }
+        button { margin: 5px; padding: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Simulation de Voiture</h1>
+    <p id="status">Chargement...</p>
+
+    <div id="grid" class="grid"></div>
+
+    <button onclick="move('UP')">⬆️ Avancer</button><br>
+    <button onclick="move('LEFT')">⬅️ Gauche</button>
+    <button onclick="move('RIGHT')">➡️ Droite</button><br>
+    <button onclick="move('DOWN')">⬇️ Reculer</button><br>
+    <button onclick="refuel()">⛽ Faire le plein</button>
+
+    <script>
+        const gridSize = 10;
+        let carX = 0, carY = 0;
+
+        function createGrid() {
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    if (x === carX && y === carY) {
+                        cell.classList.add("car");
+                        cell.innerText = "🚗";
+                    }
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        async function move(direction) {
+            // Move the car locally
+            switch (direction) {
+                case "UP": if (carY > 0) carY--; break;
+                case "DOWN": if (carY < gridSize - 1) carY++; break;
+                case "LEFT": if (carX > 0) carX--; break;
+                case "RIGHT": if (carX < gridSize - 1) carX++; break;
+            }
+            createGrid();
+
+            // Send the move request to the backend
+            let response = await fetch("http://localhost:8080/game/move", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `direction=${direction}&steps=1`
+            });
+            let text = await response.text();
+            document.getElementById("status").innerText = text;
+        }
+
+        async function getFuel() {
+        let response = await fetch("http://localhost:8080/game/fuel");
+        let fuel = await response.text();
+        return parseInt(fuel);
+        }
+
+
+        async function refuel() {
+            let response = await fetch("http://localhost:8080/game/refuel", { method: "POST" });
+            let text = await response.text();
+            document.getElementById("status").innerText = text;
+        }
+
+        createGrid();
+    </script>
+</body>
+</html>
